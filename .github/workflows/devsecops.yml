@@ -1,0 +1,124 @@
+name: DevSecOps Security Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── JOB 1: SAST - Static Code Analysis ──
+  sast-scan:
+    name: SAST - Bandit Code Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Bandit
+        run: pip install bandit
+
+      - name: Run Bandit SAST scan
+        run: |
+          echo "🔍 Running Bandit static code analysis..."
+          bandit -r app/ -f txt -o bandit-report.txt || true
+          cat bandit-report.txt
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v3
+        with:
+          name: bandit-sast-report
+          path: bandit-report.txt
+
+  # ── JOB 2: Container Security Scan ──
+  container-scan:
+    name: Container - Trivy Image Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: |
+          echo "🐳 Building Docker image..."
+          docker build -t devsecops-demo:latest .
+
+      - name: Run Trivy container scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: devsecops-demo:latest
+          format: table
+          exit-code: "0"
+          severity: CRITICAL,HIGH
+
+      - name: Run Trivy - save report
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image \
+            --format json \
+            --output trivy-report.json \
+            --severity CRITICAL,HIGH \
+            devsecops-demo:latest || true
+
+      - name: Upload Trivy report
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-container-report
+          path: trivy-report.json
+
+  # ── JOB 3: DAST - Dynamic App Security Testing ──
+  dast-scan:
+    name: DAST - OWASP ZAP Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build and start app
+        run: |
+          echo "🚀 Starting application for DAST scanning..."
+          docker build -t devsecops-demo:latest .
+          docker run -d -p 5000:5000 --name demo-app devsecops-demo:latest
+          sleep 10
+          curl -f http://localhost:5000/health || exit 1
+          echo "✅ App is running"
+
+      - name: Run OWASP ZAP baseline scan
+        run: |
+          docker run --rm \
+            --network host \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://localhost:5000 \
+            -r zap-report.html \
+            -I || true
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v3
+        with:
+          name: zap-dast-report
+          path: zap-report.html
+
+  # ── JOB 4: Security Summary ──
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [sast-scan, container-scan, dast-scan]
+    steps:
+      - name: Print security summary
+        run: |
+          echo "========================================"
+          echo "  DEVSECOPS PIPELINE - SECURITY SUMMARY"
+          echo "========================================"
+          echo "✅ SAST Scan (Bandit)     - Complete"
+          echo "✅ Container Scan (Trivy) - Complete"
+          echo "✅ DAST Scan (OWASP ZAP)  - Complete"
+          echo ""
+          echo "📄 All reports available in Actions artifacts"
+          echo "========================================"

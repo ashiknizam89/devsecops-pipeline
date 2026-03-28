@@ -1,0 +1,4 @@
+Then click **`app/requirements.txt`** and paste:
+```
+flask==2.3.3
+werkzeug==2.3.7
