@@ -7,16 +7,15 @@ on:
     branches: [main]
 
 jobs:
-  # ── JOB 1: SAST - Static Code Analysis ──
   sast-scan:
     name: SAST - Bandit Code Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -30,18 +29,17 @@ jobs:
           cat bandit-report.txt
 
       - name: Upload Bandit report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: bandit-sast-report
           path: bandit-report.txt
 
-  # ── JOB 2: Container Security Scan ──
   container-scan:
     name: Container - Trivy Image Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
@@ -67,18 +65,17 @@ jobs:
             devsecops-demo:latest || true
 
       - name: Upload Trivy report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: trivy-container-report
           path: trivy-report.json
 
-  # ── JOB 3: DAST - Dynamic App Security Testing ──
   dast-scan:
     name: DAST - OWASP ZAP Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build and start app
         run: |
@@ -100,12 +97,11 @@ jobs:
             -I || true
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: zap-dast-report
           path: zap-report.html
 
-  # ── JOB 4: Security Summary ──
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
