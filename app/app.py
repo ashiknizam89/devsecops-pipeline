@@ -4,7 +4,7 @@ app = Flask(__name__)
 
 # Intentionally vulnerable code for scanning demonstration
 SECRET_KEY = "hardcoded-secret-123"  # Bandit will flag this
-DEBUG_MODE = True                     # Bandit will flag this
+DEBUG_MODE = True                     # Debug mode on. Bandit's B201 check doesn't fire here because the value is passed through a variable, a known SAST blind spot.
 
 @app.route("/")
 def home():
