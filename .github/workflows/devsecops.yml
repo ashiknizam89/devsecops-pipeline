@@ -33,6 +33,7 @@ jobs:
         with:
           name: bandit-sast-report
           path: bandit-report.txt
+          if-no-files-found: error
 
   container-scan:
     name: Container - Trivy Image Scan
@@ -59,9 +60,10 @@ jobs:
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD":/out \
             aquasec/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e image \
             --format json \
-            --output trivy-report.json \
+            --output /out/trivy-report.json \
             --severity CRITICAL,HIGH \
             devsecops-demo:latest || true
 
@@ -70,6 +72,7 @@ jobs:
         with:
           name: trivy-container-report
           path: trivy-report.json
+          if-no-files-found: error
 
   dast-scan:
     name: DAST - OWASP ZAP Scan
@@ -89,8 +92,11 @@ jobs:
 
       - name: Run OWASP ZAP baseline scan
         run: |
+          # ZAP writes reports to /zap/wrk and runs as a non-root user
+          chmod a+w "$PWD"
           docker run --rm \
             --network host \
+            -v "$PWD":/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:2.17.0@sha256:5ccfff9a411743ab2615136a2edd7416bec9ce41572fa94e935df38c14adb2b6 \
             zap-baseline.py \
             -t http://localhost:5000 \
@@ -102,6 +108,7 @@ jobs:
         with:
           name: zap-dast-report
           path: zap-report.html
+          if-no-files-found: error
 
   security-summary:
     name: Security Summary
