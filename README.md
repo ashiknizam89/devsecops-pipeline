@@ -17,7 +17,7 @@ Every push to `main` and every pull request to `main` runs three scans in parall
 | DAST Scan        | OWASP ZAP | Dynamic Analysis | Baseline scan of the running app for web vulnerabilities       |
 | Security Summary | Custom    | Reporting        | Runs after the three scans and prints a completion summary; it doesn't read the reports |
 
-The three scans report findings as artifacts (`bandit-sast-report`, `trivy-container-report`, `zap-dast-report`) without failing the build. A green run means the scans ran, not that nothing was found.
+The three scans report findings as artifacts (`bandit-sast-report`, `trivy-container-report`, `zap-dast-report`) without failing the build. A green run means the scans ran, not that nothing was found. If a report file is missing, its upload step fails the job, so a scan that silently didn't run shows up as red.
 
 ## Supply-chain pinning
 
