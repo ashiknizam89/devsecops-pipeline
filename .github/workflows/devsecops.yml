@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -29,7 +29,7 @@ jobs:
           cat bandit-report.txt
 
       - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bandit-sast-report
           path: bandit-report.txt
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build Docker image
         run: |
@@ -47,8 +47,9 @@ jobs:
           docker build -t devsecops-demo:latest .
 
       - name: Run Trivy container scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: v0.70.0
           image-ref: devsecops-demo:latest
           format: table
           exit-code: "0"
@@ -58,14 +59,14 @@ jobs:
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image \
+            aquasec/trivy:0.70.0@sha256:be1190afcb28352bfddc4ddeb71470835d16462af68d310f9f4bca710961a41e image \
             --format json \
             --output trivy-report.json \
             --severity CRITICAL,HIGH \
             devsecops-demo:latest || true
 
       - name: Upload Trivy report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: trivy-container-report
           path: trivy-report.json
@@ -75,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build and start app
         run: |
@@ -90,14 +91,14 @@ jobs:
         run: |
           docker run --rm \
             --network host \
-            ghcr.io/zaproxy/zaproxy:stable \
+            ghcr.io/zaproxy/zaproxy:2.17.0@sha256:5ccfff9a411743ab2615136a2edd7416bec9ce41572fa94e935df38c14adb2b6 \
             zap-baseline.py \
             -t http://localhost:5000 \
             -r zap-report.html \
             -I || true
 
       - name: Upload ZAP report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: zap-dast-report
           path: zap-report.html
